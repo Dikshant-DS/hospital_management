@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice #{{ "%04d"|format(bill.id) }} - MediCore HMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --dark: #0f172a;
+            --muted: #64748b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #eef2f7;
+            color: var(--dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 24px;
+        }
+        .toolbar {
+            max-width: 900px;
+            margin: 0 auto 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .btn {
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 10px 16px;
+            text-decoration: none;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: white; border: 1px solid var(--border); color: var(--dark); }
+        .invoice {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            margin: 0 auto;
+            max-width: 900px;
+            overflow: hidden;
+        }
+        .invoice-header {
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 34px 38px;
+        }
+        .brand {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+        .brand-icon {
+            align-items: center;
+            background: var(--primary);
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            height: 48px;
+            justify-content: center;
+            width: 48px;
+        }
+        .brand h1 { font-size: 24px; font-weight: 800; }
+        .brand p, .meta p, .detail p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+        .invoice-title { text-align: right; }
+        .invoice-title h2 { font-size: 30px; font-weight: 800; letter-spacing: 0; }
+        .invoice-title .number { color: var(--primary); font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700; margin-top: 6px; }
+        .invoice-body { padding: 34px 38px; }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 22px;
+            margin-bottom: 30px;
+        }
+        .detail {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .detail h3 {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .detail .name { font-size: 18px; font-weight: 800; margin-bottom: 5px; }
+        .status {
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 8px;
+            padding: 5px 12px;
+        }
+        .status-paid { background: #ecfdf5; color: #047857; }
+        .status-pending { background: #fffbeb; color: #b45309; }
+        table { border-collapse: collapse; width: 100%; }
+        th {
+            background: var(--dark);
+            color: white;
+            font-size: 11px;
+            letter-spacing: 0.8px;
+            padding: 13px 14px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        td {
+            border-bottom: 1px solid var(--border);
+            color: #334155;
+            font-size: 14px;
+            padding: 16px 14px;
+        }
+        .money {
+            color: var(--dark);
+            font-family: 'DM Mono', monospace;
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .totals {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 22px;
+        }
+        .totals-box { width: 320px; }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .grand-total {
+            border-top: 2px solid var(--dark);
+            color: var(--dark);
+            font-size: 22px;
+            font-weight: 800;
+            margin-top: 6px;
+            padding-top: 14px;
+        }
+        .footer-note {
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 34px;
+            padding-top: 18px;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .toolbar { display: none; }
+            .invoice {
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+                max-width: none;
+            }
+        }
+        @media (max-width: 720px) {
+            body { padding: 12px; }
+            .invoice-header, .details-grid, .footer-note { grid-template-columns: 1fr; flex-direction: column; }
+            .invoice-title { text-align: left; }
+            .invoice-body, .invoice-header { padding: 24px; }
+            .totals-box { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a class="btn btn-outline" href="{{ url_for('billing') }}"><i class="fas fa-arrow-left"></i> Back to Billing</a>
+        <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Bill</button>
+    </div>
+
+    <main class="invoice">
+        <section class="invoice-header">
+            <div class="brand">
+                <div class="brand-icon"><i class="fas fa-hospital-alt"></i></div>
+                <div>
+                    <h1>MediCore HMS</h1>
+                    <p>Hospital Management System<br>Official billing receipt</p>
+                </div>
+            </div>
+            <div class="invoice-title">
+                <h2>Invoice</h2>
+                <div class="number">#{{ "%04d"|format(bill.id) }}</div>
+            </div>
+        </section>
+
+        <section class="invoice-body">
+            <div class="details-grid">
+                <div class="detail">
+                    <h3>Billed To</h3>
+                    <div class="name">{{ bill.billed_name or 'Unknown' }}</div>
+                    <p>{{ bill.billed_subtitle }}</p>
+                    {% if (bill.bill_to or 'Patient') == 'Patient' %}
+                    <p>
+                        {% if bill.patient_age %}Age: {{ bill.patient_age }}{% endif %}
+                        {% if bill.patient_gender %} / {{ bill.patient_gender }}{% endif %}
+                        {% if bill.patient_ward %}<br>Ward: {{ bill.patient_ward }}{% endif %}
+                        {% if bill.doctor_name %}<br>Doctor: {{ bill.doctor_name }}{% endif %}
+                        {% if bill.patient_phone %}<br>Phone: {{ bill.patient_phone }}{% endif %}
+                    </p>
+                    {% else %}
+                    <p>Department: {{ bill.professor_department or 'N/A' }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="detail">
+                    <h3>Bill Details</h3>
+                    <p>Bill Date: {{ bill.date }}</p>
+                    <p>Generated: {{ generated_on }}</p>
+                    <p>Payment Status:</p>
+                    <span class="status {% if bill.status == 'Paid' %}status-paid{% else %}status-pending{% endif %}">{{ bill.status }}</span>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th style="text-align:right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ bill.description }}</td>
+                        <td class="money">₹{{ "%.2f"|format(bill.amount or 0) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="totals">
+                <div class="totals-box">
+                    <div class="total-row"><span>Subtotal</span><strong>₹{{ "%.2f"|format(bill.amount or 0) }}</strong></div>
+                    <div class="total-row"><span>Tax / Discount</span><strong>₹0.00</strong></div>
+                    <div class="total-row grand-total"><span>Total</span><span>₹{{ "%.2f"|format(bill.amount or 0) }}</span></div>
+                </div>
+            </div>
+
+            <div class="footer-note">
+                <div>
+                    <strong>Thank you.</strong><br>
+                    Please keep this invoice for hospital records and payment reference.
+                </div>
+                <div>
+                    Authorized Signature<br><br>
+                    ____________________
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

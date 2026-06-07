@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Medicines{% endblock %}
+{% block page_title %}Medicine Inventory{% endblock %}
+{% block page_subtitle %}Track stock levels and manage pharmacy inventory{% endblock %}
+
+{% block topbar_action %}
+<button class="btn btn-primary" onclick="openModal('addMedModal')">
+    <i class="fas fa-plus"></i> Add Medicine
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- LOW STOCK ALERT -->
+{% set low = low_medicines %}
+{% if low %}
+<div style="background:#fef2f2;border:1px solid #fecaca;padding:14px 20px;border-radius:10px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:18px"></i>
+    <div>
+        <strong style="color:#991b1b">Low Stock Alert!</strong>
+        <span style="color:#b91c1c;font-size:13px"> {{ low|length }} medicine(s) running low: 
+        {% for m in low %}<strong>{{ m.name }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}
+        </span>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Pharmacy Stock</div>
+    </div>
+    <div class="card-body" style="padding:0 0 8px">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Medicine</th><th>Category</th><th>Stock</th><th>Price</th><th>Supplier</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                {% for m in medicines %}
+                <tr>
+                    <td><strong style="font-size:14px">{{ m.name }}</strong></td>
+                    <td><span class="badge badge-purple">{{ m.category }}</span></td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="width:80px">
+                                <div class="progress">
+                                    <div class="progress-bar medicine-stock-bar" data-stock="{{ m.stock }}" data-min-stock="{{ m.min_stock }}"></div>
+                                </div>
+                            </div>
+                            <strong style="font-family:'DM Mono',monospace;font-size:13px">{{ m.stock }}</strong>
+                        </div>
+                    </td>
+                    <td style="font-family:'DM Mono',monospace;font-weight:600">₹{{ "%.2f"|format(m.price) }}</td>
+                    <td style="color:var(--muted);font-size:13px">{{ m.supplier }}</td>
+                    <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">{{ m.expiry_date }}</td>
+                    <td>
+                        {% if m.stock <= m.min_stock %}
+                        <span class="badge badge-danger">Low Stock</span>
+                        {% elif m.stock <= m.min_stock*2 %}
+                        <span class="badge badge-warning">Warning</span>
+                        {% else %}
+                        <span class="badge badge-success">In Stock</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" data-id="{{ m.id }}" data-name="{{ m.name }}" onclick="openRestockModalFromButton(this)">
+                            <i class="fas fa-plus"></i> Restock
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ADD MEDICINE MODAL -->
+<div class="modal-overlay" id="addMedModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-pills" style="color:var(--purple)"></i> Add Medicine</h3>
+            <button class="close-btn" onclick="closeModal('addMedModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/medicines/add">
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Medicine Name *</label><input class="form-control" name="name" required placeholder="e.g. Amoxicillin"></div>
+                <div class="form-group">
+                    <label class="form-label">Category *</label>
+                    <select class="form-control" name="category" required>
+                        {% for c in ['Antibiotic','Analgesic','Anti-inflammatory','Antidiabetic','Antihypertensive','Statin','Antacid','Antihistamine','Vitamin','Other'] %}
+                        <option>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row-3">
+                <div class="form-group"><label class="form-label">Initial Stock *</label><input class="form-control" name="stock" type="number" min="0" required placeholder="0"></div>
+                <div class="form-group"><label class="form-label">Price (₹) *</label><input class="form-control" name="price" type="number" step="0.01" min="0" required placeholder="0.00"></div>
+                <div class="form-group"><label class="form-label">Min Stock Alert</label><input class="form-control" name="min_stock" type="number" min="0" value="10"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Supplier</label><input class="form-control" name="supplier" placeholder="Supplier name"></div>
+                <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-control" name="expiry_date" type="date" min="{{ today }}"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeModal('addMedModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Add Medicine</button>
+        </div>
+        </form>
+    </div>
+</div>
+
+<!-- RESTOCK MODAL -->
+<div class="modal-overlay" id="restockModal">
+    <div class="modal" style="width:380px">
+        <div class="modal-header">
+            <h3><i class="fas fa-boxes" style="color:var(--secondary)"></i> Restock Medicine</h3>
+            <button class="close-btn" onclick="closeModal('restockModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" id="restockForm">
+        <div class="modal-body">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:16px">Adding stock for: <strong id="restockName" style="color:var(--dark)"></strong></p>
+            <div class="form-group">
+                <label class="form-label">Quantity to Add *</label>
+                <input class="form-control" name="quantity" type="number" min="1" required placeholder="Enter quantity" autofocus>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeModal('restockModal')">Cancel</button>
+            <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Add Stock</button>
+        </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.medicine-stock-bar').forEach(bar => {
+    const stock = Number(bar.dataset.stock || 0);
+    const minStock = Number(bar.dataset.minStock || 0);
+    bar.style.width = Math.min(stock * 2, 100) + '%';
+    bar.style.background = stock <= minStock
+        ? 'var(--danger)'
+        : stock <= minStock * 2
+            ? 'var(--warning)'
+            : 'var(--secondary)';
+});
+
+function openRestockModalFromButton(button) {
+    openRestockModal(button.dataset.id, button.dataset.name);
+}
+
+function openRestockModal(id, name) {
+    document.getElementById('restockForm').action = '/medicines/update_stock/' + id;
+    document.getElementById('restockName').textContent = name;
+    openModal('restockModal');
+}
+</script>
+{% endblock %}

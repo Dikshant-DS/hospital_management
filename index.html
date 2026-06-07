@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of hospital operations today{% endblock %}
+
+{% block content %}
+<!-- STATS GRID -->
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon"><i class="fas fa-procedures"></i></div>
+        <div class="stat-value">{{ stats.total_patients }}</div>
+        <div class="stat-label">Total Patients</div>
+        <div class="stat-change up"><i class="fas fa-arrow-up"></i> {{ stats.active_patients }} currently active</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon"><i class="fas fa-user-md"></i></div>
+        <div class="stat-value">{{ stats.total_doctors }}</div>
+        <div class="stat-label">Medical Staff</div>
+        <div class="stat-change up"><i class="fas fa-circle" style="font-size:8px"></i> {{ stats.available_doctors }} available now</div>
+    </div>
+    <div class="stat-card yellow">
+        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-value">{{ stats.today_appointments }}</div>
+        <div class="stat-label">Today's Appointments</div>
+        <div class="stat-change up"><i class="fas fa-clock"></i> Scheduled for today</div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div>
+        <div class="stat-value">₹{{ "%.0f"|format(stats.total_revenue) }}</div>
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-change down"><i class="fas fa-hourglass-half"></i> ₹{{ "%.0f"|format(stats.pending_amount) }} pending</div>
+    </div>
+</div>
+
+<!-- CHARTS ROW -->
+<div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Patient Admissions</div>
+                <div class="card-subtitle">Monthly trend (last 6 months)</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="patientChart" height="230"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Revenue Overview</div>
+                <div class="card-subtitle">Paid vs Pending billing</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="revenueChart" height="230"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="grid-2">
+    <!-- RECENT PATIENTS -->
+    <div class="card">
+        <div class="card-header" style="padding-bottom:0">
+            <div>
+                <div class="card-title">Recent Patients</div>
+                <div class="card-subtitle">Latest admissions</div>
+            </div>
+            <a href="/patients" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="card-body" style="padding-top:16px">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Patient</th><th>Ward</th><th>Status</th><th>Admitted</th></tr></thead>
+                    <tbody>
+                    {% for p in recent_patients %}
+                    <tr>
+                        <td>
+                            <div class="avatar-name">
+                                <div class="avatar avatar-blue">{{ p.name[0] }}</div>
+                                <div class="info">
+                                    <div class="name">{{ p.name }}</div>
+                                    <div class="sub">{{ p.blood_group }} / {{ p.gender }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-primary">{{ p.ward }}</span></td>
+                        <td>
+                            {% if p.status == 'Active' %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-gray">Discharged</span>
+                            {% endif %}
+                        </td>
+                        <td style="color:var(--muted);font-size:12px">{{ p.admitted_date }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPCOMING APPOINTMENTS -->
+    <div class="card">
+        <div class="card-header" style="padding-bottom:0">
+            <div>
+                <div class="card-title">Upcoming Appointments</div>
+                <div class="card-subtitle">Next scheduled visits</div>
+            </div>
+            <a href="/appointments" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="card-body" style="padding-top:16px">
+            {% if upcoming_apts %}
+            {% for a in upcoming_apts %}
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+                <div style="width:44px;height:44px;background:var(--primary-light);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="font-size:16px;font-weight:800;color:var(--primary);line-height:1">{{ a.date.split('-')[2] }}</span>
+                    <span style="font-size:9px;color:var(--primary);font-weight:600">{{ a.date.split('-')[1] }}</span>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--dark)">{{ a.patient_name }}</div>
+                    <div style="font-size:12px;color:var(--muted)">{{ a.doctor_name }} / {{ a.reason }}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:12px;font-weight:700;color:var(--dark3);font-family:'DM Mono',monospace">{{ a.time }}</div>
+                    <span class="badge {% if a.status=='Scheduled' %}badge-primary{% elif a.status=='Completed' %}badge-success{% else %}badge-danger{% endif %}" style="margin-top:4px">{{ a.status }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state"><i class="fas fa-calendar-times"></i><p>No upcoming appointments</p></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- DEPT DISTRIBUTION -->
+<div class="card" style="margin-top:24px">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Department Distribution</div>
+            <div class="card-subtitle">Patients per department</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        {% for d in dept_data %}
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:13px;font-weight:500;color:var(--dark3)">{{ d.specialization }}</span>
+                <span style="font-size:13px;font-weight:700;color:var(--dark)">{{ d.count }}</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" style="width:{{ ((d.count / max_dept_count) * 100)|round(0, 'floor') }}%;background:var(--primary)"></div>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/chart_data').then(r=>r.json()).then(data => {
+    // Patient chart
+    new Chart(document.getElementById('patientChart'), {
+        type: 'line',
+        data: {
+            labels: data.monthly_patients.map(d=>d.month),
+            datasets: [{
+                label: 'Admissions',
+                data: data.monthly_patients.map(d=>d.count),
+                borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)',
+                borderWidth: 2.5, pointBackgroundColor: '#2563eb',
+                pointRadius: 5, pointHoverRadius: 7, fill: true, tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true, plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+    // Revenue chart
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: data.billing_trend.map(d=>d.month),
+            datasets: [
+                { label: 'Paid', data: data.billing_trend.map(d=>d.paid), backgroundColor: '#10b981', borderRadius: 6 },
+                { label: 'Pending', data: data.billing_trend.map(d=>d.pending), backgroundColor: '#f59e0b', borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top', labels: { font: { size: 12 }, usePointStyle: true } } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

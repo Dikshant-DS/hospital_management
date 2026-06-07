@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Doctors{% endblock %}
+{% block page_title %}Medical Staff{% endblock %}
+{% block page_subtitle %}Manage doctors and their schedules{% endblock %}
+
+{% block topbar_action %}
+<button class="btn btn-primary" onclick="openModal('addDoctorModal')">
+    <i class="fas fa-plus"></i> Add Doctor
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="grid-3">
+{% for d in doctors %}
+<div class="card" style="transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+    <div class="card-body">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:56px;height:56px;border-radius:14px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--primary)">
+                    {{ d.name.split()[-1][0] }}{{ d.name[0] }}
+                </div>
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:var(--dark)">{{ d.name }}</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ d.specialization }}</div>
+                </div>
+            </div>
+            <span class="badge {% if d.availability=='Available' %}badge-success{% elif d.availability=='Busy' %}badge-warning{% else %}badge-gray{% endif %}">
+                {{ d.availability }}
+            </span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div style="background:var(--lighter);padding:10px 12px;border-radius:8px">
+                <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Experience</div>
+                <div style="font-size:18px;font-weight:800;color:var(--dark);margin-top:2px">{{ d.experience }}<span style="font-size:12px;font-weight:500;color:var(--muted)"> yrs</span></div>
+            </div>
+            <div style="background:var(--lighter);padding:10px 12px;border-radius:8px">
+                <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Patients</div>
+                <div style="font-size:18px;font-weight:800;color:var(--dark);margin-top:2px">{{ d.patient_count }}</div>
+            </div>
+        </div>
+
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:4px"><i class="fas fa-phone" style="width:16px;color:var(--primary)"></i> {{ d.phone }}</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px"><i class="fas fa-envelope" style="width:16px;color:var(--primary)"></i> {{ d.email or 'N/A' }}</div>
+
+        <div style="display:flex;gap:8px">
+            <form method="post" action="/doctors/delete/{{ d.id }}" style="flex:1" onsubmit="return confirm('Remove this doctor? Active doctors with assigned work will be deactivated instead.')">
+                <button type="submit" class="btn btn-sm btn-danger" style="width:100%;justify-content:center">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="addDoctorModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-md" style="color:var(--primary)"></i> Add Doctor</h3>
+            <button class="close-btn" onclick="closeModal('addDoctorModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/doctors/add">
+        <div class="modal-body">
+            <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" name="name" required placeholder="Dr. First Last"></div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Specialization *</label>
+                    <select class="form-control" name="specialization" required>
+                        {% for s in ['Cardiology','Neurology','Pediatrics','Orthopedics','Dermatology','General Medicine','Oncology','Radiology','Psychiatry','ENT'] %}
+                        <option>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Experience (years)</label><input class="form-control" name="experience" type="number" min="0" placeholder="0"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="phone" placeholder="555-0000"></div>
+                <div class="form-group"><label class="form-label">Email</label><input class="form-control" name="email" type="email" placeholder="doctor@hospital.com"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Availability</label>
+                <select class="form-control" name="availability">
+                    <option>Available</option><option>Busy</option><option>On Leave</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeModal('addDoctorModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+        </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
